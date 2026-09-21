@@ -1,0 +1,35 @@
+# Core runtime
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+
+# LangGraph and LangChain
+langgraph
+langchain-core
+langchain-openai
+langchain-anthropic
+langgraph-checkpoint-postgres
+langsmith
+
+# Persistence
+sqlalchemy
+asyncpg
+psycopg[binary]
+alembic
+
+# Supporting services
+redis
+chromadb
+
+# UI
+streamlit
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+
+# Development
+ruff
