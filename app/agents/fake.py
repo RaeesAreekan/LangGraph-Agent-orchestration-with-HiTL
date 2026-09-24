@@ -35,23 +35,31 @@ def fake_plan() -> ExecutionPlan:
     )
 
 
-def fake_research() -> SpecialistResult:
-    return SpecialistResult(
-        subtask_id="research",
-        status="success",
-        answer="The research specialist found supporting evidence.",
-        evidence=[
-            {
-                "source": "demo-source",
-                "detail": "This is deterministic demo evidence.",
-            }
-        ],
-        assumptions=["The demo source is considered reliable."],
-        confidence=0.85,
-        tool_call_ids=[],
-    )
+def fake_research(attempt: int = 1,
+    feedback: list[str] | None = None,) -> SpecialistResult:
+        if attempt == 1:
+            answer = "The research result needs stronger supporting evidence."
+            confidence = 0.55
+        else:
+            answer = "The revised research result includes stronger evidence."
+            confidence = 0.9
+        return SpecialistResult(
+            subtask_id="research",
+            status="success",
+            answer=answer,
+            evidence=[
+                {
+                    "source": "demo-source",
+                    "detail": "This is deterministic demo evidence.",
+                }
+            ],
+            assumptions=["The demo source is considered reliable."],
+            confidence=confidence,
+            tool_call_ids=[],
+            attempt=attempt,
+        )
 
-def fake_analysis() -> SpecialistResult:
+def fake_analysis(attempt: int = 1) -> SpecialistResult:
     return SpecialistResult(
         subtask_id="analysis",
         status="success",
@@ -60,38 +68,46 @@ def fake_analysis() -> SpecialistResult:
         assumptions=["The supplied research is representative."],
         confidence=0.8,
         tool_call_ids=[],
+        attempt=attempt,
     )
 
 
 def fake_review(
     results: dict[str, SpecialistResult],
+    attempt: int,
 ) -> ReviewResult:
-    if not results:
-        decision = "escalate"
-        feedback = ["No specialist results were produced."]
-    else:
-        decision = "approved"
-        feedback = []
+    if attempt == 1:
+        return ReviewResult(
+            subtask_id="workflow",
+            target_subtask_id="research",
+            decision="needs_revision",
+            quality_score=0.6,
+            feedback=[
+                "Improve the research evidence before synthesis.",
+            ],
+            missing_evidence=[
+                "At least one stronger supporting source.",
+            ],
+        ) # type: ignore
 
     return ReviewResult(
         subtask_id="workflow",
-        decision=decision,
-        quality_score=0.9 if decision == "approved" else 0.2,
-        feedback=feedback,
+        target_subtask_id=None,
+        decision="approved",
+        quality_score=0.9,
+        feedback=[],
         missing_evidence=[],
-    )
+    ) # type: ignore
+
 
 def fake_synthesis(
     results: dict[str, SpecialistResult],
 ) -> FinalAnswer:
     evidence = []
-
-    for result in results.values():
-        evidence.extend(result.evidence)
-
     assumptions = []
 
     for result in results.values():
+        evidence.extend(result.evidence)
         assumptions.extend(result.assumptions)
 
     return FinalAnswer(

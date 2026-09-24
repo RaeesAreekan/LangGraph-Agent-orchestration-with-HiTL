@@ -59,6 +59,7 @@ class SpecialistResult(BaseModel):
 
 class ReviewResult(BaseModel):
     subtask_id: str = Field(min_length=1)
+    target_subtask_id: str | None = None
     decision: Literal["approved", "needs_revision", "escalate"]
     quality_score: float = Field(ge=0, le=1)
     feedback: list[str] = Field(default_factory=list)

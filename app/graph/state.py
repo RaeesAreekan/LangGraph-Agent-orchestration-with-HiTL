@@ -31,5 +31,13 @@ class OrchestratorState(TypedDict, total=False):
     ]
 
     review_results: dict[str, ReviewResult]
+    # add will merge the list of review results from multiple sources, ensuring that all reviews are captured in the history.
+    review_history: Annotated[
+        list[ReviewResult],
+        operator.add,
+    ]
+    review_attempt: int
+
     final_answer: FinalAnswer | None
     errors: list[str]
+    escalated: bool
