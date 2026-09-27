@@ -2,6 +2,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from datetime import datetime, timezone
+from typing import Any
+from uuid import uuid4
 
 class Subtask(BaseModel):
     id: str = Field(min_length=1)
@@ -83,11 +86,33 @@ class ExecutionError(BaseModel):
 
 
 class ExecutionEvent(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    task_id: str = ""
+    trace_id: str = ""
     event_type: str
     component: str
     status: str
     summary: str
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+    )
+    parent_event_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ApprovalDecision(BaseModel):
+    approval_id: str = Field(min_length=1)
+
+    decision: Literal[
+        "approve",
+        "modify",
+        "reject",
+        "take_over",
+    ]
+
+    reviewer_id: str = Field(min_length=1)
+
+    modification: str | None = None
+    comment: str | None = None
 
 

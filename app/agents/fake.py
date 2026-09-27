@@ -35,30 +35,31 @@ def fake_plan() -> ExecutionPlan:
     )
 
 
-def fake_research(attempt: int = 1,
-    feedback: list[str] | None = None,) -> SpecialistResult:
-        if attempt == 1:
-            answer = "The research result needs stronger supporting evidence."
-            confidence = 0.55
-        else:
-            answer = "The revised research result includes stronger evidence."
-            confidence = 0.9
-        return SpecialistResult(
-            subtask_id="research",
-            status="success",
-            answer=answer,
-            evidence=[
-                {
-                    "source": "demo-source",
-                    "detail": "This is deterministic demo evidence.",
-                }
-            ],
-            assumptions=["The demo source is considered reliable."],
-            confidence=confidence,
-            tool_call_ids=[],
-            attempt=attempt,
-        )
+def fake_research(
+    search_results: list[dict[str, str]],
+    attempt: int = 1,
+    feedback: list[str] | None = None,
+    tool_call_ids: list[str] | None = None,
+) -> SpecialistResult:
+    if attempt == 1:
+        answer = "The research result needs stronger supporting evidence."
+        confidence = 0.55
+    else:
+        answer = "The revised research result includes stronger evidence."
+        confidence = 0.9
 
+    return SpecialistResult(
+        subtask_id="research",
+        status="success",
+        answer=answer,
+        evidence=search_results,
+        assumptions=[
+            "The demo search results are considered reliable.",
+        ],
+        confidence=confidence,
+        tool_call_ids=tool_call_ids or [],
+        attempt=attempt,
+    )
 def fake_analysis(attempt: int = 1) -> SpecialistResult:
     return SpecialistResult(
         subtask_id="analysis",

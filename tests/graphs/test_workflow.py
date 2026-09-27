@@ -15,7 +15,7 @@ def always_reject_review(results, attempt: int) -> ReviewResult:
         feedback=["Evidence is still insufficient."],
         missing_evidence=["More supporting evidence."],
     )
-
+@pytest.mark.asyncio
 async def test_second_rejection_escalates_instead_of_looping():
     graph = build_graph(review_fn=always_reject_review)
 

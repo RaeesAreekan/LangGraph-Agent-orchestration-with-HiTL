@@ -7,6 +7,7 @@ from app.schemas.domain import (
     FinalAnswer,
     ReviewResult,
     SpecialistResult,
+    ApprovalDecision
 )
 
 
@@ -38,6 +39,9 @@ class OrchestratorState(TypedDict, total=False):
     ]
     review_attempt: int
 
-    final_answer: FinalAnswer | None
+    final_answer: FinalAnswer | None        
     errors: list[str]
     escalated: bool
+    human_review_requested: bool
+    approval_decision: ApprovalDecision | None
+    approval_rejected: bool
