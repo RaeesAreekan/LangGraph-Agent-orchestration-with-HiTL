@@ -23,15 +23,17 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
 
-    supervisor_model: str = "gpt-4o-mini"
-    specialist_model: str = "gpt-4o-mini"
-    reviewer_model: str = "gpt-4o-mini"
+    supervisor_model: str = "gpt-5"
+    specialist_model: str = "gpt-5"
+    reviewer_model: str = "gpt-5"
 
     langsmith_tracing: bool = False
     langsmith_api_key: str | None = None
     langsmith_project: str = "agent-orchestrator"
     langsmith_endpoint: str = "https://api.smith.langchain.com"
 
+    agent_mode: str = "fake"
+    tool_mode: str = "demo"  # Options: "demo", "mcp"
 
 @lru_cache
 def get_settings() -> Settings:

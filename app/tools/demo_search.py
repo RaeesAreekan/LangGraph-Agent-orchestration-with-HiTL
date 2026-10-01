@@ -2,14 +2,7 @@ from pydantic import BaseModel, Field
 
 from app.schemas.tools import ToolSpec
 from app.tools.base import ToolContext
-
-class DemoSearchInput(BaseModel):
-    query: str = Field(min_length=1)
-    limit: int = Field(default=3, ge=1, le=10)
-
-
-class DemoSearchOutput(BaseModel):
-    results: list[dict[str, str]]
+from app.schemas.tools import DemoSearchInput, DemoSearchOutput
 
 
 class DemoSearchTool:

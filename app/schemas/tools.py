@@ -22,3 +22,12 @@ class ToolCallRecord(BaseModel):
     status: Literal["started", "succeeded", "failed"]
     latency_ms: int | None = None
     error: str | None = None
+
+
+class DemoSearchInput(BaseModel):
+    query: str = Field(min_length=1)
+    limit: int = Field(default=3, ge=1, le=10)
+
+
+class DemoSearchOutput(BaseModel):
+    results: list[dict[str, str]]

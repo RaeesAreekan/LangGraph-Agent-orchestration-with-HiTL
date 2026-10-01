@@ -33,3 +33,6 @@ httpx
 
 # Development
 ruff
+
+langchain-mcp-adapters
+mcp
