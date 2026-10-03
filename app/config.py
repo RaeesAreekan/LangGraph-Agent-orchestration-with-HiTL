@@ -2,6 +2,8 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from typing import Literal
+
 
 class Settings(BaseSettings):
     # Mounting configuration for the application, including database and API keys.
@@ -34,6 +36,8 @@ class Settings(BaseSettings):
 
     agent_mode: str = "fake"
     tool_mode: str = "demo"  # Options: "demo", "mcp"
+    brave_api_key: str | None = None
+    checkpoint_backend: Literal["memory", "postgres"] = "memory"
 
 @lru_cache
 def get_settings() -> Settings:

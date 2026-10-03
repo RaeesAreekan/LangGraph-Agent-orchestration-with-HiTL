@@ -70,7 +70,7 @@ def make_planning_node(
         }
 
     return planning_node
-def make_research_node(tool_registry: ToolRegistry,researcher:ResearcherAgent | None = None):
+def make_research_node(tool_registry: ToolRegistry,researcher:ResearcherAgent | None = None, search_tool_name: str = "demo_search"):
     async def research_node(state: OrchestratorState) -> dict:
         previous_result = state.get(
             "specialist_results",
@@ -93,7 +93,7 @@ def make_research_node(tool_registry: ToolRegistry,researcher:ResearcherAgent | 
 
         ## Tool call before fake research agent call
         invocation = await tool_registry.invoke(
-            tool_name="mcp_search",
+            tool_name=search_tool_name,
             agent_name="researcher",
             input_data={
                 "query": state["original_task"], # type: ignore

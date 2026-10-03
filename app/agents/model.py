@@ -48,6 +48,7 @@ class OpenAIStructuredModel:
     ) -> BaseModel:
         structured_model = self._model.with_structured_output(
             output_type,
+            method = "function_calling"
         )
 
         result: Any = await structured_model.ainvoke(

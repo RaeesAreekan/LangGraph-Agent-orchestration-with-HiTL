@@ -10,11 +10,11 @@ class Subtask(BaseModel):
     id: str = Field(min_length=1)
     description: str = Field(min_length=1)
     specialist: Literal["researcher", "analyst"]
-    dependencies: list[str] = Field(default_factory=list)
-    required_inputs: list[str] = Field(default_factory=list)
+    dependencies: list[str]
+    required_inputs: list[str]
     expected_output: str = Field(min_length=1)
-    risk_level: Literal["low", "medium", "high"] = "low"
-    requires_approval: bool = False
+    risk_level: Literal["low", "medium", "high"] 
+    requires_approval: bool 
 
 
 class ExecutionPlan(BaseModel):
@@ -53,28 +53,27 @@ class SpecialistResult(BaseModel):
     subtask_id: str = Field(min_length=1)
     status: Literal["success", "failed"]
     answer: str
-    evidence: list[dict[str, str]] = Field(default_factory=list)
-    assumptions: list[str] = Field(default_factory=list)
+    evidence: list[dict[str, str]] 
+    assumptions: list[str] 
     confidence: float = Field(ge=0, le=1)
-    tool_call_ids: list[str] = Field(default_factory=list)
-    attempt: int = Field(default=1, ge=1)
+    tool_call_ids: list[str] 
+    attempt: int = Field(ge=1)
 
 
 class ReviewResult(BaseModel):
     subtask_id: str = Field(min_length=1)
-    target_subtask_id: str | None = None
+    target_subtask_id: str | None 
     decision: Literal["approved", "needs_revision", "escalate"]
     quality_score: float = Field(ge=0, le=1)
-    feedback: list[str] = Field(default_factory=list)
-    missing_evidence: list[str] = Field(default_factory=list)
-
+    feedback: list[str] 
+    missing_evidence: list[str]
 
 class FinalAnswer(BaseModel):
     title: str = Field(min_length=1)
     body: str = Field(min_length=1)
-    evidence: list[dict[str, str]] = Field(default_factory=list)
-    assumptions: list[str] = Field(default_factory=list)
-    limitations: list[str] = Field(default_factory=list)
+    evidence: list[dict[str, str]] 
+    assumptions: list[str]
+    limitations: list[str] 
     confidence: float = Field(ge=0, le=1)
 
 

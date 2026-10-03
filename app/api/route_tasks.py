@@ -75,8 +75,8 @@ async def get_task_events(
             status_code=404,
             detail="Task not found",
         )
-
-    return executor.event_sink.list_for_task(task_id)
+    events = await executor.event_sink.list_for_task(task_id)   
+    return events
 
 
 @router.post(

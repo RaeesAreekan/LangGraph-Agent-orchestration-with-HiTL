@@ -37,12 +37,12 @@ class ToolRegistry:
             for tool in self._tools.values()
             if agent_name in tool.spec.allowed_agents
         ]
-    def _emit_event(
+    async def _emit_event(
         self,
         event: ExecutionEvent,
     ) -> None:
         if self.event_sink is not None:
-            self.event_sink.append(event)
+            await self.event_sink.append(event)
 
     async def invoke(
         self,
@@ -64,7 +64,7 @@ class ToolRegistry:
         )
 
         self.records.append(record)
-        self._emit_event(
+        await self._emit_event(
             ExecutionEvent(
                 task_id=context.task_id,
                 trace_id=context.trace_id,
@@ -111,7 +111,7 @@ class ToolRegistry:
             record.output = validated_output.model_dump(
                 mode="json",
             )
-            self._emit_event(
+            await self._emit_event(
                 ExecutionEvent(
                     task_id=context.task_id,
                     trace_id=context.trace_id,
@@ -134,7 +134,7 @@ class ToolRegistry:
         except Exception as exc:
             record.status = "failed"
             record.error = str(exc)
-            self._emit_event(
+            await self._emit_event(
                 ExecutionEvent(
                     task_id=context.task_id,
                     trace_id=context.trace_id,

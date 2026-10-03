@@ -61,7 +61,15 @@ class McpToolProvider:
 
         # Our demo search server returns a list of results.
         # Convert that into the application's typed output model.
-        if isinstance(raw_output, list):
+        if isinstance(raw_output, dict):
+            if "web" in raw_output:
+                raw_output = {
+                    "results": raw_output["web"].get("results", [])
+                }
+            elif "results" not in raw_output:
+                raw_output = {"results": []}
+
+        elif isinstance(raw_output, list):
             raw_output = {
                 "results": raw_output,
             }
@@ -93,8 +101,13 @@ class McpSearchTool:
         context: ToolContext,
     ) -> DemoSearchOutput:
         result = await self.provider.invoke(
-            tool_name="search",
-            input_data=input_data.model_dump(),
+            tool_name="brave_web_search",
+            input_data={
+                "query": input_data.query,
+                "count": input_data.limit,
+                "safesearch": "moderate",
+                "search_lang": "en",
+            },
             output_type=DemoSearchOutput,
             context=context,
         )

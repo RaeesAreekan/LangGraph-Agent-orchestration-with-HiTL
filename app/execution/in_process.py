@@ -32,7 +32,7 @@ class InProcessExecutor:
         self.tasks: dict[str, InProcessTask] = {}
         self.handles: dict[str, asyncio.Task] = {}
 
-    def _emit(
+    async def _emit(
         self,
         task_id: str,
         trace_id: str,
@@ -42,7 +42,7 @@ class InProcessExecutor:
         summary: str,
         metadata: dict | None = None,
     ) -> None:
-        self.event_sink.append(
+        await self.event_sink.append(
             ExecutionEvent(
                 task_id=task_id,
                 trace_id=trace_id,
@@ -64,7 +64,7 @@ class InProcessExecutor:
             status="queued",
         )
 
-        self._emit(
+        await self._emit(
             task_id=task_id,
             trace_id=trace_id,
             event_type="task_queued",
@@ -89,7 +89,7 @@ class InProcessExecutor:
         request: TaskRequest,
     ) -> None:
         task.status = "running"
-        self._emit(
+        await self._emit(
             task_id=task.task_id,
             trace_id=task.trace_id,
             event_type="task_started",
@@ -120,12 +120,10 @@ class InProcessExecutor:
                 }
             }
             result = await self.graph.ainvoke(initial_state, config=config) # type: ignore
-            self._handle_graph_result(task, result)
-            if result.get("escalated", False):
-                task.status = "escalated"
-            else:
-                task.status = "completed"
+            await self._handle_graph_result(task, result)
 
+            if task.status == "waiting_approval":
+                return
             task.final_answer = result.get("final_answer")
 
             errors = result.get("errors", [])
@@ -133,7 +131,7 @@ class InProcessExecutor:
             if errors:
                 task.error = errors[-1]
 
-            self._emit(
+            await self._emit(
                 task_id=task.task_id,
                 trace_id=task.trace_id,
                 event_type=(
@@ -149,7 +147,7 @@ class InProcessExecutor:
         except Exception as exc:
             task.status = "failed"
             task.error = str(exc)
-            self._emit(
+            await self._emit(
                 task_id=task.task_id,
                 trace_id=task.trace_id,
                 event_type="task_failed",
@@ -177,7 +175,7 @@ class InProcessExecutor:
 
         return task
 
-    def _handle_graph_result(
+    async def _handle_graph_result(
         self,
         task: InProcessTask,
         result: dict,
@@ -190,7 +188,7 @@ class InProcessExecutor:
             task.status = "waiting_approval"
             task.pending_approval = interrupt_payload
 
-            self._emit(
+            await self._emit(
                 task_id=task.task_id,
                 trace_id=task.trace_id,
                 event_type="approval_requested",
@@ -264,10 +262,10 @@ class InProcessExecutor:
                 config=config,
             )
 
-            self._handle_graph_result(task, result)
+            await self._handle_graph_result(task, result)
 
             if task.status == "completed":
-                self._emit(
+                await self._emit(
                     task_id=task.task_id,
                     trace_id=task.trace_id,
                     event_type="task_completed",

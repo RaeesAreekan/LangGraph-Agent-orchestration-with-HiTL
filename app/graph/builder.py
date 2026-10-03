@@ -27,6 +27,7 @@ from app.agents.analyst import AnalystAgent
 from app.agents.reviewer import ReviewerAgent
 from app.agents.synthesizer import SynthesizerAgent
 
+import sys
 def build_graph(
     review_fn=fake_review,
     tool_registry: ToolRegistry | None = None,
@@ -37,7 +38,8 @@ def build_graph(
     analyst: AnalystAgent | None = None,
     reviewer: ReviewerAgent | None = None,
     synthesizer: SynthesizerAgent | None = None,
-    tool_mode:str = "demo"
+    tool_mode:str = "demo",
+    brave_api_key: str | None = None
 ):
     if tool_registry is None:
         tool_registry = ToolRegistry(
@@ -45,15 +47,25 @@ def build_graph(
         )
 
         if tool_mode == "mcp":
+            if not brave_api_key:
+                raise ValueError(
+                    "BRAVE_API_KEY is required when TOOL_MODE='mcp'."
+                )
+
             provider = McpToolProvider.from_connections(
                 {
-                    "demo_search": {
+                    "brave-search": {
                         "transport": "stdio",
-                        "command": "python",
+                        "command": "npx.cmd",
                         "args": [
-                            "-m",
-                            "app.tools.mcp_server",
+                            "-y",
+                            "@brave/brave-search-mcp-server",
+                            "--transport",
+                            "stdio",
                         ],
+                        "env": {
+                            "BRAVE_API_KEY": brave_api_key,
+                        },
                     }
                 }
             )
@@ -66,9 +78,13 @@ def build_graph(
                 DemoSearchTool(), # type: ignore
             )
     graph = StateGraph(OrchestratorState)
-
+    search_tool_name = (
+    "mcp_search"
+    if tool_mode == "mcp"
+    else "demo_search"
+    )
     graph.add_node("planning", make_planning_node(supervisor=supervisor))
-    graph.add_node("research", make_research_node(tool_registry, researcher=researcher))
+    graph.add_node("research", make_research_node(tool_registry, researcher=researcher, search_tool_name=search_tool_name))
     graph.add_node("analysis", make_analysis_node(analyst=analyst))
     graph.add_node("review", make_review_node(review_fn=review_fn, reviewer=reviewer))
     graph.add_node("synthesis", make_synthesis_node(synthesizer=synthesizer))
