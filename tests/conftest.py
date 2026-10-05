@@ -26,5 +26,6 @@ def test_app():
             agent_mode="fake",
             tool_mode="demo",
             checkpoint_backend="memory",
+            execution_backend="in_process",
         ) # type: ignore
     )

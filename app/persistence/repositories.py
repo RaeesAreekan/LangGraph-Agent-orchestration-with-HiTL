@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.models import EventRecord, TaskRecord
 from app.schemas.domain import ExecutionEvent
 
-
+from sqlalchemy.exc import IntegrityError
 class TaskRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -19,6 +19,8 @@ class TaskRepository:
         request_context: dict,
         human_review_requested: bool,
         status: str,
+        idempotency_key: str | None = None,
+        conversation_id: str | None = None,
     ) -> None:
         record = TaskRecord(
             task_id=task_id,
@@ -28,6 +30,8 @@ class TaskRepository:
             request_context=request_context,
             human_review_requested=human_review_requested,
             status=status,
+            idempotency_key=idempotency_key,
+            conversation_id=conversation_id,
         )
 
         self.session.add(record)
@@ -57,6 +61,20 @@ class TaskRepository:
     async def get(self, task_id: str) -> TaskRecord | None:
         return await self.session.get(TaskRecord, task_id)
 
+    async def get_by_idempotency_key(
+        self,
+        user_id: str,
+        idempotency_key: str,
+    ) -> TaskRecord | None:
+        result = await self.session.execute(
+            select(TaskRecord).where(
+                TaskRecord.user_id == user_id,
+                TaskRecord.idempotency_key == idempotency_key,
+            )
+        )
+
+        return result.scalar_one_or_none()
+
 
 class EventRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -73,7 +91,7 @@ class EventRepository:
             summary=event.summary,
             timestamp=event.timestamp,
             parent_event_id=event.parent_event_id,
-            metadata=event.metadata,
+            event_metadata=event.metadata,
         )
 
         self.session.add(record)

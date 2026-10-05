@@ -1,0 +1,54 @@
+flowchart TD
+    Client[Client] --> API[FastAPI API]
+    API --> Submit[POST /tasks]
+    API --> Status[GET /tasks/task_id]
+    API --> Events[GET /tasks/task_id/events]
+    API --> Approval[POST /tasks/task_id/approval]
+
+    Submit --> Executor[InProcessExecutor]
+    Approval --> Executor
+
+    Executor --> TaskStore[(PostgreSQL task and event store)]
+    Executor -->|execution_backend=celery| Dispatcher[Celery dispatcher]
+    Executor -->|execution_backend=in_process| LocalRun[Local asyncio task]
+
+    Dispatcher --> Redis[(Redis broker/result backend)]
+    Redis --> Worker[Celery worker]
+    Worker --> TaskStore
+    Worker --> Checkpoints[(PostgreSQL LangGraph checkpoints)]
+    Worker --> Memory[Memory service]
+    LocalRun --> Checkpoints
+    LocalRun --> Memory
+
+    Memory -->|memory_backend=chroma| Chroma[(ChromaDB)]
+    Memory -->|memory_backend=fake| FakeMemory[Fake memory service]
+
+    Worker --> Workflow[LangGraph workflow]
+    LocalRun --> Workflow
+    Workflow --> Planning[Supervisor planning]
+    Planning --> Parallel{Independent subtasks}
+    Parallel --> Research[Research specialist]
+    Parallel --> Analysis[Analysis specialist]
+
+    Research --> Registry[Tool registry]
+    Registry --> Demo[Demo search tool]
+    Registry --> MCP[Brave Search MCP tool]
+
+    Research --> Review[Reviewer]
+    Analysis --> Review
+    Review --> Decision{Review decision}
+    Decision -->|approved| Synthesis[Synthesizer]
+    Decision -->|needs revision| Retry[Specialist retry]
+    Retry --> Research
+    Retry --> Analysis
+    Decision -->|escalate| Escalated[Escalated task]
+
+    Synthesis --> Final[Final answer]
+    Final --> TaskStore
+    Final --> Memory
+
+    Review -->|requires approval| Interrupt[Human approval interrupt]
+    Interrupt --> TaskStore
+    Approval -->|queues resume_workflow| Redis
+    Redis --> Worker
+

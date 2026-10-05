@@ -18,6 +18,9 @@ class OrchestratorState(TypedDict, total=False):
     original_task: str
     request_context: dict
 
+    memories: list[str]
+    memory_ids_used: list[str]
+    
     plan: ExecutionPlan | None
 
     completed_subtask_ids: Annotated[

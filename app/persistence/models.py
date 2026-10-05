@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, JSON, String, Text
+from sqlalchemy import DateTime, Integer, JSON, String, Text , UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-
+from sqlalchemy import UniqueConstraint
 class Base(DeclarativeBase):
     pass
 
@@ -76,6 +76,27 @@ class TaskRecord(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+    idempotency_key: Mapped[str | None] = mapped_column(
+    String(255),
+    nullable=True,
+    index=True,
+    )
+
+    conversation_id: Mapped[str | None] = mapped_column(
+    String(255),
+    nullable=True,
+    index=True,
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "idempotency_key",
+            name="uq_tasks_user_idempotency_key",
+        ),
+    )
+
 
 
 class EventRecord(Base):

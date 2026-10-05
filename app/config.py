@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     brave_api_key: str | None = None
     checkpoint_backend: Literal["memory", "postgres"] = "memory"
 
+    execution_backend: Literal["in_process", "celery"] = "in_process"
+
+    memory_enabled: bool = False
+    memory_top_k: int = 5
+    chroma_collection: str = "agent_orchestrator_memory"
+    embedding_model: str = "text-embedding-3-small"
+
+    memory_backend: Literal["fake", "chroma"] = "fake"
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

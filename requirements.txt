@@ -36,3 +36,5 @@ ruff
 
 langchain-mcp-adapters
 mcp
+
+celery[redis]

@@ -4,7 +4,7 @@ from app.api.route_tasks import router as tasks_router
 from app.config import get_settings,Settings
 from app.execution.in_process import InProcessExecutor
 from app.graph.builder import build_graph
-from app.observability.events import InMemoryEventSink
+from app.observability.events import InMemoryEventSink,PersistentEventSink
 
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -17,13 +17,26 @@ from app.agents.synthesizer import SynthesizerAgent
 
 from contextlib import asynccontextmanager
 from app.persistence.checkpointer import postgres_checkpointer
+from app.persistence.database import Database
 
-def create_app(settings: Settings) -> FastAPI:
+from app.execution.dispatcher import CeleryTaskDispatcher
+
+from app.memory.factory import create_memory_service
+
+def create_app(settings: Settings|None = None) -> FastAPI:
     settings = settings or get_settings()
+
+    dispatcher = (
+    CeleryTaskDispatcher()
+    if settings.execution_backend == "celery"
+    else None
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         event_sink = InMemoryEventSink()
+    
+        memory_service = create_memory_service(settings)
 
         researcher = None
         supervisor = None
@@ -41,27 +54,38 @@ def create_app(settings: Settings) -> FastAPI:
             synthesizer = SynthesizerAgent(model=model)
 
         if settings.checkpoint_backend == "postgres":
-            async with postgres_checkpointer(
-                settings.database_url,
-            ) as checkpointer:
-                graph = build_graph(
-                    event_sink=event_sink,
-                    checkpointer=checkpointer,
-                    researcher=researcher,
-                    supervisor=supervisor,
-                    analyst=analyst,
-                    reviewer=reviewer,
-                    synthesizer=synthesizer,
-                    tool_mode=settings.tool_mode,
-                    brave_api_key=settings.brave_api_key,
-                )
+            database = Database(settings.database_url)
+            await database.create_tables()
 
-                app.state.executor = InProcessExecutor(
-                    graph=graph,
-                    event_sink=event_sink,
-                )
+            event_sink = PersistentEventSink(database)
+            try:
+                async with postgres_checkpointer(
+                    settings.database_url,
+                ) as checkpointer:
+                    graph = build_graph(
+                        event_sink=event_sink,
+                        checkpointer=checkpointer,
+                        researcher=researcher,
+                        supervisor=supervisor,
+                        analyst=analyst,
+                        reviewer=reviewer,
+                        synthesizer=synthesizer,
+                        tool_mode=settings.tool_mode,
+                        brave_api_key=settings.brave_api_key,
+                    )
 
-                yield
+                    app.state.executor = InProcessExecutor(
+                        graph=graph,
+                        event_sink=event_sink,
+                        database=database,
+                        dispatcher=dispatcher,
+                        memory_service=memory_service,
+                        memory_top_k=settings.memory_top_k,
+                    )
+
+                    yield
+            finally:
+                await database.close()
 
         else:
             graph = build_graph(
@@ -79,6 +103,8 @@ def create_app(settings: Settings) -> FastAPI:
             app.state.executor = InProcessExecutor(
                 graph=graph,
                 event_sink=event_sink,
+                memory_service=memory_service,
+                memory_top_k=settings.memory_top_k,
             )
 
             yield

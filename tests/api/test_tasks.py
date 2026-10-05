@@ -64,3 +64,34 @@ async def test_task_reaches_completed_status(test_app):
         assert body["task_id"] == task_id
         assert body["status"] == "completed"
         assert body["final_answer"] is not None
+
+
+@pytest.mark.asyncio
+async def test_same_idempotency_key_returns_existing_task(test_app):
+    app = test_app
+
+    async with LifespanManager(app):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            payload = {
+                "user_id": "demo-user",
+                "task": "Prepare a research brief",
+                "context": {},
+                "idempotency_key": "brief-001",
+            }
+
+            first = await client.post(
+                "/tasks",
+                json=payload,
+            )
+
+            second = await client.post(
+                "/tasks",
+                json=payload,
+            )
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert first.json()["task_id"] == second.json()["task_id"]
